@@ -1,5 +1,6 @@
 package br.com.magicformula.portfoliogenerator.handler;
 
+import br.com.magicformula.portfoliogenerator.exception.GenericException;
 import br.com.magicformula.portfoliogenerator.exception.InvalidNumberOfStocksException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -17,6 +18,11 @@ public class PortfolioGeneratorHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Object> handleExceptions(Exception ex) {
         return ResponseEntity.internalServerError().body("Ops, algo de errado aconteceu.");
+    }
+
+    @ExceptionHandler(GenericException.class)
+    public ResponseEntity<Object> handleGenericException(Exception ex) {
+        return ResponseEntity.internalServerError().body(ex.getMessage());
     }
 
 }

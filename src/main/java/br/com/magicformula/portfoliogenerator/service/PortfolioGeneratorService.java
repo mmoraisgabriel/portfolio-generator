@@ -2,12 +2,12 @@ package br.com.magicformula.portfoliogenerator.service;
 
 import br.com.magicformula.portfoliogenerator.dto.StockRequest;
 import br.com.magicformula.portfoliogenerator.entity.Stock;
+import br.com.magicformula.portfoliogenerator.exception.GenericException;
 import br.com.magicformula.portfoliogenerator.exception.InvalidNumberOfStocksException;
 import br.com.magicformula.portfoliogenerator.repository.StockRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
@@ -22,7 +22,7 @@ public class PortfolioGeneratorService {
     @Autowired
     private StockRepository stockRepository;
 
-    public void createStock(StockRequest stockRequest) {
+    public String createStock(StockRequest stockRequest) {
         log.info("createStock() - [START] - stockRequest: {}", stockRequest);
 
         Stock stock = new Stock();
@@ -30,43 +30,47 @@ public class PortfolioGeneratorService {
         stock.setRoa(stockRequest.getRoa());
         stock.setPl(stockRequest.getPl());
 
+        try {
+            stockRepository.save(stock);
+        } catch (Exception e) {
+            log.info("createStock() - [ERROR] - Erro genérico - stockRequest: {}", stockRequest);
+            throw new GenericException("Ops, tivemos um problema ao criar o ativo.");
+        }
+
         log.info("createStock() - [END] - stockRequest: {}", stockRequest);
-        stockRepository.save(stock);
+        return "Ativo criado com sucesso!";
     }
 
-    public ResponseEntity<Object> editStock(StockRequest stockRequest) {
+    public String editStock(StockRequest stockRequest) {
         log.info("editStock() - [START] - stockRequest: {}", stockRequest);
 
-        Optional<Stock> stock = stockRepository.findById(stockRequest.getCode());
-        if (stock.isPresent()) {
-            stock.get().setPl(stockRequest.getPl());
-            stock.get().setRoa(stockRequest.getRoa());
-            stockRepository.save(stock.get());
+        Stock stock = findStock(stockRequest.getCode());
 
-            log.info("editStock() - [END] - stockRequest: {}", stockRequest);
-            return ResponseEntity.ok().body("Edição feita com sucesso!");
-        } else {
-            log.info("editStock() - [ERROR] - Ativo não encontrado - stockRequest: {}", stockRequest);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Não encontramos o ativo que você quer editar.");
+        stock.setPl(stockRequest.getPl());
+        stock.setRoa(stockRequest.getRoa());
+
+        try {
+            stockRepository.save(stock);
+        } catch (Exception e) {
+            log.info("editStock() - [ERROR] - Erro genérico - stockRequest: {}", stockRequest);
+            throw new GenericException("Ops, tivemos um problema ao editar o ativo.");
         }
+
+        log.info("editStock() - [END] - stockRequest: {}", stockRequest);
+        return "Edição feita com sucesso!";
     }
 
     public List<Stock> getStocks() {
         return stockRepository.findAll();
     }
 
-    public ResponseEntity<Object> deleteStock(String code) {
+    public String deleteStock(String code) {
         log.info("deleteStock() - [START] - code: {}", code);
 
-        Optional<Stock> stock = stockRepository.findById(code);
-        if (stock.isPresent()) {
-            stockRepository.delete(stock.get());
-            log.info("deleteStock() - [END] - code: {}", code);
-            return ResponseEntity.ok().body("Ativo deletado com sucesso!");
-        } else {
-            log.info("deleteStock() - [ERROR] - Ativo não encontrado - code: {}", code);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Não encontramos o ativo que você quer deletar.");
-        }
+        stockRepository.delete(findStock(code));
+
+        log.info("deleteStock() - [END] - code: {}", code);
+        return "Ativo deletado com sucesso!";
     }
 
     public List<String> generatePortfolio(Integer numberOfStocks) {
@@ -97,6 +101,18 @@ public class PortfolioGeneratorService {
 
         log.info("generatePortfolio() - [END] - portfolio: {}", portfolio);
         return portfolio;
+    }
+
+    private Stock findStock(String code) {
+        log.info("findStock() - [START] - code: {}", code);
+
+        Optional<Stock> stock = stockRepository.findById(code);
+
+        if (stock.isEmpty()) {
+            throw new GenericException("Ativo não encontrado!");
+        }
+
+        return stock.get();
     }
 
     private void calculateMfRanking() {

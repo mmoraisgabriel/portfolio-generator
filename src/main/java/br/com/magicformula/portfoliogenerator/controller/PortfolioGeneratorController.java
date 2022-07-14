@@ -22,23 +22,22 @@ public class PortfolioGeneratorController {
 
     @PostMapping(value = "/new", consumes = "application/json")
     public ResponseEntity<Object> createStock(@RequestBody StockRequest stockRequest) {
-        service.createStock(stockRequest);
-        return ResponseEntity.ok().body(null);
+        return ResponseEntity.ok().body(service.createStock(stockRequest));
     }
 
     @PutMapping(value = "/edit", consumes = "application/json")
     public ResponseEntity<Object> editStock(@RequestBody StockRequest stockRequest) {
-        return service.editStock(stockRequest);
+        return ResponseEntity.ok().body(service.editStock(stockRequest));
     }
 
     @GetMapping(value = "/stocks", produces = "application/json")
-    public List<Stock> getStocks() {
-        return service.getStocks();
+    public ResponseEntity<List<Stock>> getStocks() {
+        return ResponseEntity.ok().body(service.getStocks());
     }
 
     @DeleteMapping(value = "/delete")
     public ResponseEntity<Object> deleteStock(@RequestParam String code) {
-        return service.deleteStock(code);
+        return ResponseEntity.ok().body(service.deleteStock(code));
     }
 
 }
